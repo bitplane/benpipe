@@ -1,0 +1,26 @@
+[project]
+name = "benpipe"
+description = ""
+version = "0.0.1"
+authors = [
+    { name = "Gareth Davidson", email = "gaz@bitplane.net" }
+]
+dependencies = [
+    "bencodepy"    
+]
+
+[project.optional-dependencies]
+dev = [
+    "flake8",
+    "pre-commit",
+    "pytest",
+    "coverage"
+]
+
+[project.scripts]
+benpipe = "benpipe:main"
+
+[build-system]
+build-backend = "flit_core.buildapi"
+requires = ["flit_core >=3.2,<4"]
+

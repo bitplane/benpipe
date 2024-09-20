@@ -1,7 +1,8 @@
-import sys
-import json
-import bencodepy
 import argparse
+import json
+import sys
+
+import bencodepy
 
 
 def to_json(bencoded_data):

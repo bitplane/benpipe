@@ -6,7 +6,7 @@ authors = [
     { name = "Gareth Davidson", email = "gaz@bitplane.net" }
 ]
 dependencies = [
-    "bencodepy"    
+    "bencodepy"
 ]
 
 [project.optional-dependencies]

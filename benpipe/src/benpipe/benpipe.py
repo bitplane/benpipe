@@ -9,20 +9,22 @@ def to_json(bencoded_data):
     """Convert bencoded data to JSON."""
     try:
         decoded_data = bencodepy.decode(bencoded_data)
-        json_output = json.dumps(decoded_data, indent=4)
-        return json_output
     except Exception as e:
         raise ValueError(f"Error decoding bencoded data: {e}")
+
+    json_output = json.dumps(decoded_data, indent=4)
+    return json_output
 
 
 def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
         parsed_data = json.loads(json_data)
-        bencoded_output = bencodepy.encode(parsed_data)
-        return bencoded_output
     except Exception as e:
         raise ValueError(f"Error encoding JSON to bencoded data: {e}")
+
+    bencoded_output = bencodepy.encode(parsed_data)
+    return bencoded_output
 
 
 def try_both():

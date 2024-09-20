@@ -11,6 +11,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "build",
+    "twine",
+    "mkdocs",
     "flake8",
     "pre-commit",
     "pytest",

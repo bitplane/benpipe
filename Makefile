@@ -23,7 +23,11 @@ pre-commit: .git/hooks/pre-commit ## install pre-commit into the git repo
 update-pre-commit: scripts/update-pre-commit.sh ## autoupdate pre-commit
 	scripts/update-pre-commit.sh
 
+dist: scripts/dist.sh ## build the distributable files
+	scripts/dist.sh
 
+release: scripts/release.sh ## publish to pypi
+	scripts/release.sh
 
 # Caching doesn't work if we depend on PHONY targets
 

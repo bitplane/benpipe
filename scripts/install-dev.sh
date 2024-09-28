@@ -4,7 +4,7 @@
 source .venv/bin/activate
 
 # install our app
-python3 -m pip install ./benpipe[dev]
+python3 -m pip install -e ./benpipe[dev]
 
 # let make know that we are installed in user mode
 touch .venv/.installed-dev

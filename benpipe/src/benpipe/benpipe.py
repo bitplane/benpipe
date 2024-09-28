@@ -4,7 +4,7 @@ import sys
 
 import bencodepy
 
-from .binary import Base64Encoder, base64_decoder
+from .convert import to_bencode_types, to_json_types
 
 
 def to_json(bencoded_data):
@@ -14,40 +14,28 @@ def to_json(bencoded_data):
     except Exception as e:
         raise ValueError(f"Error decoding bencoded data: {e}")
 
-    json_output = json.dumps(decoded_data, indent=4, cls=Base64Encoder)
+    converted = to_json_types(decoded_data)
+
+    json_output = json.dumps(converted, indent=4)
     return json_output
 
 
 def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
-        parsed_data = json.loads(json_data, object_hook=base64_decoder)
+        parsed_data = json.loads(json_data)
     except Exception as e:
         raise ValueError(f"Error encoding JSON to bencoded data: {e}")
 
-    bencoded_output = bencodepy.encode(parsed_data)
+    converted = to_bencode_types(parsed_data)
+
+    bencoded_output = bencodepy.encode(converted)
     return bencoded_output
-
-
-def try_both():
-    """Attempt bencode -> JSON. If that fails, assume input is JSON and try JSON -> bencode."""
-    input_data = sys.stdin.read()
-
-    try:
-        sys.stdout.write(to_json(input_data.encode()))
-    except ValueError:
-        try:
-            sys.stdout.buffer.write(to_bencode(input_data))
-        except ValueError as e:
-            print(f"Conversion failed: {e}", file=sys.stderr)
-            sys.exit(1)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Convert between JSON and bencode.")
-    parser.add_argument(
-        "--to-json", action="store_true", help="Convert bencoded input to JSON"
-    )
+    parser.add_argument("--to-json", action="store_true", help="Convert bencoded input to JSON")
     parser.add_argument(
         "--to-bencode", action="store_true", help="Convert JSON input to bencoded data."
     )
@@ -61,8 +49,15 @@ def main():
         input_data = sys.stdin.read()
         sys.stdout.buffer.write(to_bencode(input_data))
     else:
-        # Default behavior: try to detect and convert automatically
-        try_both()
+        try:
+            input_data = sys.stdin.buffer.read()
+            sys.stdout.write(to_json(input_data))
+        except ValueError as json_err:
+            print("trying bencode to json")
+            try:
+                sys.stdout.buffer.write(to_bencode(input_data.decode()))
+            except (ValueError, UnicodeDecodeError) as bencode_error:
+                print(f"Conversion failed: {json_err} / {bencode_error}", file=sys.stderr)
 
 
 if __name__ == "__main__":

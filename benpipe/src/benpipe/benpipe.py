@@ -4,6 +4,8 @@ import sys
 
 import bencodepy
 
+from .binary import Base64Encoder, base64_decoder
+
 
 def to_json(bencoded_data):
     """Convert bencoded data to JSON."""
@@ -12,14 +14,14 @@ def to_json(bencoded_data):
     except Exception as e:
         raise ValueError(f"Error decoding bencoded data: {e}")
 
-    json_output = json.dumps(decoded_data, indent=4)
+    json_output = json.dumps(decoded_data, indent=4, cls=Base64Encoder)
     return json_output
 
 
 def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
-        parsed_data = json.loads(json_data)
+        parsed_data = json.loads(json_data, object_hook=base64_decoder)
     except Exception as e:
         raise ValueError(f"Error encoding JSON to bencoded data: {e}")
 

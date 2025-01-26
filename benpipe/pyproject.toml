@@ -17,7 +17,8 @@ dev = [
     "flake8",
     "pre-commit",
     "pytest",
-    "coverage"
+    "coverage",
+    "pydoc-markdown"
 ]
 
 [project.scripts]

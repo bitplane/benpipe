@@ -21,7 +21,7 @@ def to_json_types(obj):
     Write binary data as base64 if it isn't UTF8.
     """
     if isinstance(obj, tuple):
-        return {"__tuple": list(to_json_types(o) for o in obj)}
+        return {"__tuple": [to_json_types(o) for o in obj]}
     if isinstance(obj, list):
         return [to_json_types(o) for o in obj]
     if isinstance(obj, bytes):

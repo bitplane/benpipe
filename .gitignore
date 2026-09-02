@@ -2,6 +2,8 @@
 __pycache__
 .coverage
 htmlcov
-benpipe/dist
+dist
+coverage.json
+site
 *.torrent
 docs/pydoc

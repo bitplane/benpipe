@@ -11,8 +11,8 @@ def to_json(bencoded_data):
     """Convert bencoded data to JSON."""
     try:
         decoded_data = bencodepy.decode(bencoded_data)
-    except Exception as e:
-        raise ValueError(f"Error decoding bencoded data: {e}")
+    except bencodepy.DecodingError as error:
+        raise ValueError(f"Error decoding bencoded data: {error}") from error
 
     converted = to_json_types(decoded_data)
 
@@ -24,8 +24,8 @@ def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
         parsed_data = json.loads(json_data)
-    except Exception as e:
-        raise ValueError(f"Error encoding JSON to bencoded data: {e}")
+    except (json.JSONDecodeError, TypeError) as error:
+        raise ValueError(f"Error encoding JSON to bencoded data: {error}") from error
 
     converted = to_bencode_types(parsed_data)
 
@@ -36,9 +36,7 @@ def to_bencode(json_data):
 def main():
     parser = argparse.ArgumentParser(description="Convert between JSON and bencode.")
     parser.add_argument("--to-json", action="store_true", help="Convert bencoded input to JSON")
-    parser.add_argument(
-        "--to-bencode", action="store_true", help="Convert JSON input to bencoded data."
-    )
+    parser.add_argument("--to-bencode", action="store_true", help="Convert JSON input to bencoded data.")
 
     args = parser.parse_args()
 

@@ -25,3 +25,11 @@ def test_failed_automatic_conversion_returns_failure():
     assert result.returncode == 1
     assert result.stdout == b""
     assert result.stderr.startswith(b"Conversion failed:")
+
+
+def test_explicit_conversion_modes_are_mutually_exclusive():
+    result = run_benpipe(b"", "--to-json", "--to-bencode")
+
+    assert result.returncode == 2
+    assert result.stdout == b""
+    assert b"not allowed with argument" in result.stderr

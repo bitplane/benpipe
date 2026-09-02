@@ -51,8 +51,9 @@ def to_bencode(json_data):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Convert between JSON and bencode.")
-    parser.add_argument("--to-json", action="store_true", help="Convert bencoded input to JSON")
-    parser.add_argument("--to-bencode", action="store_true", help="Convert JSON input to bencoded data.")
+    output_format = parser.add_mutually_exclusive_group()
+    output_format.add_argument("--to-json", action="store_true", help="Convert bencoded input to JSON")
+    output_format.add_argument("--to-bencode", action="store_true", help="Convert JSON input to bencoded data.")
 
     args = parser.parse_args()
 

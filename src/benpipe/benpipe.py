@@ -2,32 +2,15 @@ import argparse
 import json
 import sys
 
-import bencodepy
-from bencodepy.decoder import Decoder
-
-from .convert import to_bencode_types, to_json_types
-
-
-def decode_one(bencoded_data: bytes):
-    decoder = Decoder(bencoded_data)
-    decoded_data = decoder.decode()
-
-    if decoder.idx != len(bencoded_data):
-        raise bencodepy.DecodingError(f"Trailing data at byte {decoder.idx}")
-
-    if bencoded_data[:1] not in (b"d", b"l"):
-        if len(decoded_data) != 1:
-            raise bencodepy.DecodingError("Expected exactly one top-level value")
-        return decoded_data[0]
-
-    return decoded_data
+from ._bencode import DecodeError, EncodeError, decode, encode
+from .convert import json_object, to_bencode_types, to_json_types
 
 
 def to_json(bencoded_data):
     """Convert bencoded data to JSON."""
     try:
-        decoded_data = decode_one(bencoded_data)
-    except bencodepy.DecodingError as error:
+        decoded_data = decode(bencoded_data)
+    except DecodeError as error:
         raise ValueError(f"Error decoding bencoded data: {error}") from error
 
     converted = to_json_types(decoded_data)
@@ -39,10 +22,10 @@ def to_json(bencoded_data):
 def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
-        parsed_data = json.loads(json_data)
+        parsed_data = json.loads(json_data, object_pairs_hook=json_object)
         converted = to_bencode_types(parsed_data)
-        return bencodepy.encode(converted)
-    except (json.JSONDecodeError, TypeError, ValueError, bencodepy.EncodingError) as error:
+        return encode(converted)
+    except (json.JSONDecodeError, TypeError, ValueError, EncodeError) as error:
         raise ValueError(f"Error encoding JSON to bencoded data: {error}") from error
 
 

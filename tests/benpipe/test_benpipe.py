@@ -3,6 +3,7 @@ import json
 import pytest
 
 from benpipe.benpipe import to_bencode, to_json
+from benpipe.convert import DICT_TAG
 
 
 @pytest.mark.parametrize(
@@ -26,6 +27,16 @@ def test_to_json_rejects_trailing_data(suffix):
 
 def test_to_bencode_encodes_json():
     assert to_bencode('{"spam": [1, "eggs"]}') == b"d4:spamli1e4:eggsee"
+
+
+def test_to_bencode_preserves_duplicate_json_keys():
+    assert to_bencode('{"key": 1, "key": 2}') == b"d3:keyi1e3:keyi2ee"
+
+
+def test_to_json_preserves_duplicate_bencode_keys():
+    converted = json.loads(to_json(b"d3:keyi1e3:keyi2ee"))
+
+    assert converted == {DICT_TAG: [["key", 1], ["key", 2]]}
 
 
 @pytest.mark.parametrize("invalid_json", ["not json", "1.5"])

@@ -8,9 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.10"
 
-dependencies = [
-    "bencodepy"
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
@@ -18,6 +16,7 @@ dev = [
     "pytest",
     "coverage",
     "pytest-cov",
+    "hypothesis",
     "build",
     "twine",
     "ruff",

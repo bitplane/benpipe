@@ -109,11 +109,17 @@ def test_dictionary_encoding_is_sorted_and_stable():
 
 
 def test_encoder_handles_deep_nesting_without_recursion():
+    depth = sys.getrecursionlimit() + 10
     value = 1
-    for _ in range(sys.getrecursionlimit() + 10):
+    for _ in range(depth):
         value = [value]
 
-    assert decode(encode(value)) == value
+    decoded = decode(encode(value))
+    for _ in range(depth):
+        assert type(decoded) is list
+        assert len(decoded) == 1
+        decoded = decoded[0]
+    assert decoded == 1
 
 
 def test_arbitrarily_large_integer_avoids_decimal_conversion_limit():

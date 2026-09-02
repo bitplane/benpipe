@@ -33,7 +33,7 @@ def to_bencode(json_data):
     return bencoded_output
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(description="Convert between JSON and bencode.")
     parser.add_argument("--to-json", action="store_true", help="Convert bencoded input to JSON")
     parser.add_argument("--to-bencode", action="store_true", help="Convert JSON input to bencoded data.")
@@ -50,13 +50,15 @@ def main():
         try:
             input_data = sys.stdin.buffer.read()
             sys.stdout.write(to_json(input_data))
-        except ValueError as json_err:
-            print("trying bencode to json")
+        except ValueError as bencode_error:
             try:
                 sys.stdout.buffer.write(to_bencode(input_data.decode()))
-            except (ValueError, UnicodeDecodeError) as bencode_error:
-                print(f"Conversion failed: {json_err} / {bencode_error}", file=sys.stderr)
+            except (ValueError, UnicodeDecodeError) as json_error:
+                print(f"Conversion failed: {bencode_error} / {json_error}", file=sys.stderr)
+                return 1
+
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

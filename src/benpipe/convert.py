@@ -3,6 +3,7 @@ import binascii
 
 BYTES_TAG = "__benpipe_bytes__"
 DICT_TAG = "__benpipe_dict__"
+TUPLE_TAG = "__benpipe_tuple__"
 
 
 def bytes_to_str(b: bytes) -> str:
@@ -31,16 +32,15 @@ def binary_from_json(obj: dict) -> bytes:
 
 
 def is_tagged_object(obj: dict) -> bool:
-    return len(obj) == 1 and next(iter(obj)) in {BYTES_TAG, DICT_TAG}
+    return len(obj) == 1 and next(iter(obj)) in {BYTES_TAG, DICT_TAG, TUPLE_TAG}
 
 
 def to_json_types(obj):
     """
-    Use {"__tuple": []} for tuples
-    Write binary data as base64 if it isn't UTF8.
+    Represent tuples and non-UTF-8 binary data with typed JSON objects.
     """
     if isinstance(obj, tuple):
-        return {"__tuple": [to_json_types(o) for o in obj]}
+        return {TUPLE_TAG: [to_json_types(o) for o in obj]}
     if isinstance(obj, list):
         return [to_json_types(o) for o in obj]
     if isinstance(obj, bytes):
@@ -65,8 +65,11 @@ def to_bencode_types(obj):
             if not isinstance(items, list) or any(not isinstance(item, list) or len(item) != 2 for item in items):
                 raise ValueError(f"{DICT_TAG} must contain key-value pairs")
             return {to_bencode_types(key): to_bencode_types(value) for key, value in items}
-        if "__tuple" in obj:
-            return tuple(to_bencode_types(o) for o in obj["__tuple"])
+        if len(obj) == 1 and TUPLE_TAG in obj:
+            items = obj[TUPLE_TAG]
+            if not isinstance(items, list):
+                raise TypeError(f"{TUPLE_TAG} must contain a list")
+            return tuple(to_bencode_types(o) for o in items)
         return {to_bencode_types(key): to_bencode_types(value) for key, value in obj.items()}
     if isinstance(obj, list):
         return [to_bencode_types(o) for o in obj]

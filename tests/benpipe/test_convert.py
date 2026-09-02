@@ -1,6 +1,14 @@
 import pytest
 
-from benpipe.convert import BYTES_TAG, DICT_TAG, bytes_to_str, str_to_bytes, to_bencode_types, to_json_types
+from benpipe.convert import (
+    BYTES_TAG,
+    DICT_TAG,
+    TUPLE_TAG,
+    bytes_to_str,
+    str_to_bytes,
+    to_bencode_types,
+    to_json_types,
+)
 
 
 def test_bytes_to_str_utf8():
@@ -70,12 +78,29 @@ def test_tuple_to_json():
 
     json_data = to_json_types({"tuple": input_tuple})
 
-    assert json_data == {"tuple": {"__tuple": [123, "\x01\x02\x03"]}}
+    assert json_data == {"tuple": {TUPLE_TAG: [123, "\x01\x02\x03"]}}
 
 
 def test_json_to_tuple():
-    json_data = {"tuple": {"__tuple": [123, {BYTES_TAG: "AgM="}]}}
+    json_data = {"tuple": {TUPLE_TAG: [123, {BYTES_TAG: "AgM="}]}}
 
     bencode_data = to_bencode_types(json_data)
 
     assert bencode_data == {b"tuple": (123, b"\x02\x03")}
+
+
+def test_dictionary_containing_old_tuple_key_stays_a_dictionary():
+    value = {"__tuple": "hello", "other": 1}
+
+    assert to_bencode_types(value) == {b"__tuple": b"hello", b"other": 1}
+
+
+def test_bencode_dictionary_matching_tuple_tag_is_escaped():
+    original = {TUPLE_TAG.encode(): [b"ordinary data"]}
+
+    assert to_bencode_types(to_json_types(original)) == original
+
+
+def test_invalid_tuple_tag_is_rejected():
+    with pytest.raises(TypeError, match="must contain a list"):
+        to_bencode_types({TUPLE_TAG: "not a list"})

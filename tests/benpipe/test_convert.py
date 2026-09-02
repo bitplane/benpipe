@@ -1,4 +1,6 @@
-from benpipe.convert import bytes_to_str, str_to_bytes, to_bencode_types, to_json_types
+import pytest
+
+from benpipe.convert import BYTES_TAG, DICT_TAG, bytes_to_str, str_to_bytes, to_bencode_types, to_json_types
 
 
 def test_bytes_to_str_utf8():
@@ -6,8 +8,8 @@ def test_bytes_to_str_utf8():
 
 
 def test_bytes_to_str_non_utf8():
-    # This will test non-UTF8 bytes (random example)
-    assert bytes_to_str(b"\xff\xfe\xfd") == "__base64://79"
+    with pytest.raises(UnicodeDecodeError):
+        bytes_to_str(b"\xff\xfe\xfd")
 
 
 def test_str_to_bytes_utf8():
@@ -15,8 +17,7 @@ def test_str_to_bytes_utf8():
 
 
 def test_str_to_bytes_base64():
-    # This tests the reverse operation of encoding to base64 and should decode correctly
-    assert str_to_bytes("__base64://79") == b"\xff\xfe\xfd"
+    assert str_to_bytes("__base64://79") == b"__base64://79"
 
 
 def test_to_json_types_with_simple_data():
@@ -25,9 +26,39 @@ def test_to_json_types_with_simple_data():
 
 def test_to_json_types_with_binary_data():
     input_data = {b"\xff\xfe\xfd": b"\xfa\xfb\xfc"}
-    expected_output = {"__base64://79": "__base64:+vv8"}
+    expected_output = {
+        DICT_TAG: [
+            [
+                {BYTES_TAG: "//79"},
+                {BYTES_TAG: "+vv8"},
+            ]
+        ]
+    }
 
     assert to_json_types(input_data) == expected_output
+
+
+def test_binary_data_round_trip():
+    original = {b"binary": b"\xff\xfe\xfd", b"\xff": b"value"}
+
+    assert to_bencode_types(to_json_types(original)) == original
+
+
+def test_base64_prefix_is_ordinary_text():
+    value = "__base64:aGVsbG8="
+
+    assert to_bencode_types(value) == value.encode()
+
+
+def test_invalid_tagged_binary_is_rejected():
+    with pytest.raises(ValueError, match="Invalid base64"):
+        to_bencode_types({BYTES_TAG: "not valid!"})
+
+
+def test_bencode_dictionary_matching_a_tag_is_escaped():
+    original = {BYTES_TAG.encode(): b"ordinary data"}
+
+    assert to_bencode_types(to_json_types(original)) == original
 
 
 def test_to_bencode_types_with_simple_data():
@@ -43,7 +74,7 @@ def test_tuple_to_json():
 
 
 def test_json_to_tuple():
-    json_data = {"tuple": {"__tuple": [123, "__base64:AgM="]}}
+    json_data = {"tuple": {"__tuple": [123, {BYTES_TAG: "AgM="}]}}
 
     bencode_data = to_bencode_types(json_data)
 

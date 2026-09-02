@@ -40,13 +40,10 @@ def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
         parsed_data = json.loads(json_data)
-    except (json.JSONDecodeError, TypeError) as error:
+        converted = to_bencode_types(parsed_data)
+        return bencodepy.encode(converted)
+    except (json.JSONDecodeError, TypeError, ValueError, bencodepy.EncodingError) as error:
         raise ValueError(f"Error encoding JSON to bencoded data: {error}") from error
-
-    converted = to_bencode_types(parsed_data)
-
-    bencoded_output = bencodepy.encode(converted)
-    return bencoded_output
 
 
 def main() -> int:
@@ -58,11 +55,19 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.to_json:
-        input_data = sys.stdin.buffer.read()
-        sys.stdout.write(to_json(input_data))
+        try:
+            input_data = sys.stdin.buffer.read()
+            sys.stdout.write(to_json(input_data))
+        except ValueError as error:
+            print(f"Conversion failed: {error}", file=sys.stderr)
+            return 1
     elif args.to_bencode:
-        input_data = sys.stdin.read()
-        sys.stdout.buffer.write(to_bencode(input_data))
+        try:
+            input_data = sys.stdin.read()
+            sys.stdout.buffer.write(to_bencode(input_data))
+        except (ValueError, UnicodeDecodeError) as error:
+            print(f"Conversion failed: {error}", file=sys.stderr)
+            return 1
     else:
         try:
             input_data = sys.stdin.buffer.read()

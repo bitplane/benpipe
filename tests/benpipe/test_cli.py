@@ -33,3 +33,28 @@ def test_explicit_conversion_modes_are_mutually_exclusive():
     assert result.returncode == 2
     assert result.stdout == b""
     assert b"not allowed with argument" in result.stderr
+
+
+def test_explicit_json_conversion():
+    result = run_benpipe(b"d1:ai1ee", "--to-json")
+
+    assert result.returncode == 0
+    assert result.stdout == b'{\n    "a": 1\n}'
+    assert result.stderr == b""
+
+
+def test_explicit_bencode_conversion():
+    result = run_benpipe(b'{"a":1}', "--to-bencode")
+
+    assert result.returncode == 0
+    assert result.stdout == b"d1:ai1ee"
+    assert result.stderr == b""
+
+
+def test_failed_explicit_conversion_has_no_traceback():
+    result = run_benpipe(b"invalid", "--to-json")
+
+    assert result.returncode == 1
+    assert result.stdout == b""
+    assert result.stderr.startswith(b"Conversion failed:")
+    assert b"Traceback" not in result.stderr

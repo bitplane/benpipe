@@ -1,4 +1,5 @@
 import sys
+import tracemalloc
 
 import pytest
 from hypothesis import given
@@ -180,3 +181,34 @@ def test_arbitrary_input_never_leaks_an_incidental_exception(data):
         decode(data)
     except DecodeError:
         pass
+
+
+def test_encoder_memory_scales_linearly_with_depth():
+    peaks = []
+    for depth in (1000, 4000):
+        value = 1
+        for _ in range(depth):
+            value = [value]
+        tracemalloc.start()
+        try:
+            encoded = encode(value)
+            peaks.append(tracemalloc.get_traced_memory()[1])
+        finally:
+            tracemalloc.stop()
+        assert encoded == b"l" * depth + b"i1e" + b"e" * depth
+    # Four times the input depth should not retain quadratic diagnostic paths.
+    assert peaks[1] < peaks[0] * 6
+
+
+def test_encoder_preserves_nested_error_paths():
+    with pytest.raises(EncodeError, match=r"at \$\[b'key'\]\[0\]"):
+        encode({b"key": [None]})
+    cycle = []
+    cycle.append(cycle)
+    with pytest.raises(EncodeError, match=r"at \$\[b'key'\]\[0\]"):
+        encode({b"key": cycle})
+
+
+def test_encoder_allows_shared_containers():
+    shared = [1]
+    assert encode([shared, shared]) == b"lli1eeli1eee"

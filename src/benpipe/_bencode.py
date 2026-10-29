@@ -169,11 +169,27 @@ def _encode_integer(value: int) -> bytes:
     return b"-" + result if negative else result
 
 
+@dataclass(frozen=True, slots=True)
+class _Path:
+    """Share path prefixes and render them only when an encoding error occurs."""
+
+    parent: _Path | None
+    component: str
+
+    def __str__(self):
+        components = []
+        current = self
+        while current is not None:
+            components.append(current.component)
+            current = current.parent
+        return "".join(reversed(components))
+
+
 def encode(value: BencodeValue | dict[bytes, BencodeValue]) -> bytes:
     """Encode a Python value as canonical bencode."""
     output: list[bytes] = []
     active_containers: set[int] = set()
-    actions: list[tuple[str, object, str]] = [("value", value, "$")]
+    actions: list[tuple[str, object, _Path]] = [("value", value, _Path(None, "$"))]
 
     while actions:
         action, current, path = actions.pop()
@@ -197,7 +213,7 @@ def encode(value: BencodeValue | dict[bytes, BencodeValue]) -> bytes:
             actions.append(("leave", container_id, path))
             actions.append(("token", b"e", path))
             for item_index in range(len(current) - 1, -1, -1):
-                actions.append(("value", current[item_index], f"{path}[{item_index}]"))
+                actions.append(("value", current[item_index], _Path(path, f"[{item_index}]")))
             actions.append(("token", b"l", path))
         elif current_type is dict or current_type is BencodeDict:
             container_id = id(current)
@@ -214,8 +230,8 @@ def encode(value: BencodeValue | dict[bytes, BencodeValue]) -> bytes:
             actions.append(("token", b"e", path))
             for item_index in range(len(entries) - 1, -1, -1):
                 key, item = entries[item_index]
-                actions.append(("value", item, f"{path}[{key!r}]"))
-                actions.append(("value", key, f"{path}.key[{item_index}]"))
+                actions.append(("value", item, _Path(path, f"[{key!r}]")))
+                actions.append(("value", key, _Path(path, f".key[{item_index}]")))
             actions.append(("token", b"d", path))
         else:
             raise EncodeError(f"Unsupported value of type {current_type.__name__} at {path}")

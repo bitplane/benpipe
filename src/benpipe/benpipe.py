@@ -3,6 +3,7 @@ import json
 import sys
 
 from ._bencode import DecodeError, EncodeError, decode, encode
+from ._limits import check_json_nesting, check_value_nesting
 from .convert import json_object, to_bencode_types, to_json_types
 
 
@@ -13,7 +14,9 @@ def to_json(bencoded_data):
     except DecodeError as error:
         raise ValueError(f"Error decoding bencoded data: {error}") from error
 
+    check_value_nesting(decoded_data)
     converted = to_json_types(decoded_data)
+    check_value_nesting(converted)
 
     json_output = json.dumps(converted, indent=4)
     return json_output
@@ -22,6 +25,9 @@ def to_json(bencoded_data):
 def to_bencode(json_data):
     """Convert JSON data to bencoded format."""
     try:
+        if isinstance(json_data, (bytes, bytearray)):
+            json_data = json_data.decode(json.detect_encoding(json_data))
+        check_json_nesting(json_data)
         parsed_data = json.loads(json_data, object_pairs_hook=json_object)
         converted = to_bencode_types(parsed_data)
         return encode(converted)

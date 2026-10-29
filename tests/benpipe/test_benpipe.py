@@ -43,3 +43,25 @@ def test_to_json_preserves_duplicate_bencode_keys():
 def test_to_bencode_reports_invalid_input(invalid_json):
     with pytest.raises(ValueError, match="Error encoding JSON"):
         to_bencode(invalid_json)
+
+
+def test_nesting_boundary_round_trip():
+    data = b"l" * 100 + b"i1e" + b"e" * 100
+    assert to_bencode(to_json(data)) == data
+
+
+def test_nesting_check_ignores_escaped_strings():
+    text = '[\\"' * 200
+    assert to_bencode(json.dumps(text)) == str(len(text)).encode() + b":" + text.encode()
+
+
+def test_tag_expansion_obeys_json_nesting_limit():
+    data = b"l" * 99 + b"1:\xff" + b"e" * 99
+    assert to_bencode(to_json(data)) == data
+    with pytest.raises(ValueError, match="Maximum nesting"):
+        to_json(b"l" + data + b"e")
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-16", "utf-32"])
+def test_json_bytes_api_preserves_encoding_detection(encoding):
+    assert to_bencode('"é"'.encode(encoding)) == b"2:\xc3\xa9"

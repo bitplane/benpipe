@@ -46,7 +46,7 @@ def main() -> int:
             return 1
     elif args.to_bencode:
         try:
-            input_data = sys.stdin.read()
+            input_data = sys.stdin.buffer.read().decode("utf-8")
             sys.stdout.buffer.write(to_bencode(input_data))
         except (ValueError, UnicodeDecodeError) as error:
             print(f"Conversion failed: {error}", file=sys.stderr)
@@ -57,7 +57,7 @@ def main() -> int:
             sys.stdout.write(to_json(input_data))
         except ValueError as bencode_error:
             try:
-                sys.stdout.buffer.write(to_bencode(input_data.decode()))
+                sys.stdout.buffer.write(to_bencode(input_data.decode("utf-8")))
             except (ValueError, UnicodeDecodeError) as json_error:
                 print(f"Conversion failed: {bencode_error} / {json_error}", file=sys.stderr)
                 return 1

@@ -58,3 +58,12 @@ def test_failed_explicit_conversion_has_no_traceback():
     assert result.stdout == b""
     assert result.stderr.startswith(b"Conversion failed:")
     assert b"Traceback" not in result.stderr
+
+
+def test_json_input_is_utf8_regardless_of_stdin_encoding(monkeypatch):
+    monkeypatch.setenv("PYTHONIOENCODING", "latin-1")
+    for arguments in [(), ("--to-bencode",)]:
+        result = run_benpipe('"é"'.encode("utf-8"), *arguments)
+        assert result.returncode == 0
+        assert result.stdout == b"2:\xc3\xa9"
+        assert result.stderr == b""

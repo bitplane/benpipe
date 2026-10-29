@@ -1,9 +1,9 @@
 #!/bin/bash
 
+set -euo pipefail
 source .venv/bin/activate
 
-# dirty
-VERSION=$(grep -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*=[[:space:]]*"([^"]+)".*/\1/')
+VERSION=$(grep -E '^version[[:space:]]*=' pyproject.toml | sed -E 's/.*=[[:space:]]*"([^\"]+)".*/\1/')
 TAG_NAME=$(git describe --exact-match --tags HEAD)
 
 if [[ "$VERSION" != "$TAG_NAME" ]]; then
@@ -12,9 +12,16 @@ if [[ "$VERSION" != "$TAG_NAME" ]]; then
     exit 1
 fi
 
-if [ -z "$PYPI_TOKEN" ]; then
+if [ -z "${PYPI_TOKEN:-}" ]; then
   echo "PYPI_TOKEN is not set. Can't authenticate to upload"
   exit 1
 fi
 
-python3 -m twine upload dist/* --user=__token__ --password="$PYPI_TOKEN"
+# Keep potentially large builds on the project filesystem, away from /tmp.
+mkdir -p dist
+release_dir=$(mktemp -d dist/release.XXXXXXXX)
+trap 'rm -rf "$release_dir"' EXIT
+python3 -m build . --outdir "$release_dir"
+python3 "$(dirname "$0")/check-release.py" "$release_dir" "${1:-benpipe}" "$VERSION"
+python3 -m twine check "$release_dir"/*
+python3 -m twine upload "$release_dir"/* --user=__token__ --password="$PYPI_TOKEN"

@@ -81,3 +81,18 @@ def test_excessive_nesting_is_a_controlled_conversion_error():
                 assert result.stdout == b""
                 assert b"Maximum nesting depth of 100 exceeded" in result.stderr
                 assert b"Traceback" not in result.stderr
+
+
+def test_large_integer_cli_round_trip():
+    text = b"9" * 5000
+    encoded = b"i" + text + b"e"
+    for arguments in [(), ("--to-json",)]:
+        result = run_benpipe(encoded, *arguments)
+        assert result.returncode == 0
+        assert result.stdout == text
+        assert result.stderr == b""
+    for arguments in [(), ("--to-bencode",)]:
+        result = run_benpipe(text, *arguments)
+        assert result.returncode == 0
+        assert result.stdout == encoded
+        assert result.stderr == b""

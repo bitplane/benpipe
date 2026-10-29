@@ -1,4 +1,5 @@
 import json
+import sys
 
 import pytest
 
@@ -65,3 +66,27 @@ def test_tag_expansion_obeys_json_nesting_limit():
 @pytest.mark.parametrize("encoding", ["utf-8", "utf-16", "utf-32"])
 def test_json_bytes_api_preserves_encoding_detection(encoding):
     assert to_bencode('"é"'.encode(encoding)) == b"2:\xc3\xa9"
+
+
+@pytest.mark.parametrize("sign", ["", "-"])
+def test_large_integer_full_conversion_round_trip(sign):
+    text = sign + "1234567890" * 500
+    encoded = b"i" + text.encode() + b"e"
+    original_limit = sys.get_int_max_str_digits()
+    try:
+        sys.set_int_max_str_digits(640)
+        assert to_json(encoded) == text
+        assert to_bencode(text) == encoded
+        assert to_bencode(to_json(b"l" + encoded + b"e")) == b"l" + encoded + b"e"
+        assert sys.get_int_max_str_digits() == 640
+    finally:
+        sys.set_int_max_str_digits(original_limit)
+
+
+@pytest.mark.parametrize("value", [0, -1, 'é\n\\"', [], {}, [1, {}, ["x"]], {"é": [1, {"x": "y"}]}])
+def test_json_formatting_matches_standard_library(value):
+    assert to_json(to_bencode(json.dumps(value))) == json.dumps(value, indent=4)
+
+
+def test_json_negative_zero_is_accepted():
+    assert to_bencode("-0") == b"i0e"
